@@ -91,7 +91,7 @@ const useStore = defineStore('store', {
           opacity: 0.7,
           noDataValue: 255,
           resolution: 256,
-        });
+        } as any);
         rasterLayer.addTo(this.map as L.Map);
         rasterLayer.bringToFront();
       });

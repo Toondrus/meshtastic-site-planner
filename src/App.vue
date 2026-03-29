@@ -19,52 +19,53 @@
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="true">Site / Transmitter</a>
                 <ul class="dropdown-menu dropdown-menu-dark p-3 show">
-                  <li>
-                    <Transmitter />
-                  </li>
+                  <li><Transmitter /></li>
                 </ul>
               </li>
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Receiver</a>
                 <ul class="dropdown-menu dropdown-menu-dark p-3">
-                  <li>
-                    <Receiver />
-                  </li>
+                  <li><Receiver /></li>
                 </ul>
               </li>
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Environment</a>
                 <ul class="dropdown-menu dropdown-menu-dark p-3">
-                  <li>
-                    <Environment />
-                  </li>
+                  <li><Environment /></li>
                 </ul>
               </li>
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Simulation Options</a>
                 <ul class="dropdown-menu dropdown-menu-dark p-3">
-                  <li>
-                    <Simulation />
-                  </li>
+                  <li><Simulation /></li>
                 </ul>
               </li>
               <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="true">
-                Display
-              </a>
-            <ul class="dropdown-menu dropdown-menu-dark p-3 show">
-            <li>
-              <Display />
-            </li>
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="true">Display</a>
+                <ul class="dropdown-menu dropdown-menu-dark p-3 show">
+                  <li><Display /></li>
+                </ul>
+              </li>
+
+              <!-- 🆕 Импорт точек из Excel -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Import Log</a>
+                <ul class="dropdown-menu dropdown-menu-dark p-3">
+                  <li>
+                    <ExcelImport @sites-loaded="onSitesLoaded" />
+                  </li>
+                </ul>
+              </li>
+
             </ul>
-            </li>
-            </ul>
+
             <div class="mt-3 d-flex gap-2">
               <button :disabled="store.simulationState === 'running'" @click="store.runSimulation" type="button" class="btn btn-success btn-sm" id="runSimulation">
                 <span :class="{ 'd-none': store.simulationState !== 'running' }" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <span class="button-text">{{ buttonText() }}</span>
               </button>
             </div>
+
             <ul class="list-group mt-3">
               <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(site, index) in store.$state.localSites" :key="site.taskId">
                 <span>{{ site.params.transmitter.name }}</span>
@@ -75,8 +76,11 @@
         </div>
       </div>
     </nav>
-    <div id="map" ref="map">
-    </div>
+
+    <div id="map"></div>
+
+    <!-- 🆕 Слой маркеров поверх карты -->
+    <MeshMarkerLayer :map="leafletMap" :points="meshPoints" />
   </div>
 </template>
 
@@ -84,22 +88,37 @@
 import "leaflet/dist/leaflet.css"
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap/dist/js/bootstrap.bundle.min.js"
+import { ref, watch } from 'vue'
+import L from 'leaflet'
+
 import Transmitter from "./components/Transmitter.vue"
 import Receiver from "./components/Receiver.vue"
 import Environment from "./components/Environment.vue"
 import Simulation from "./components/Simulation.vue"
 import Display from "./components/Display.vue"
+import ExcelImport from "./components/ExcelImport.vue"
+import MeshMarkerLayer from "./components/MeshMarkerLayer.vue"
+import type { MeshLogPoint } from "./types/meshLog"
 
 import { useStore } from './store.ts'
+
 const store = useStore()
+
+const leafletMap = ref<L.Map | null>(null)
+const meshPoints = ref<MeshLogPoint[]>([])
+
+watch(() => store.map, (map) => {
+  if (map) leafletMap.value = map
+}, { immediate: true })
+
+function onSitesLoaded(points: MeshLogPoint[]) {
+  meshPoints.value = points
+}
+
 const buttonText = () => {
-  if ('running' === store.simulationState) {
-    return 'Running'
-  } else if ('failed' === store.simulationState) {
-    return 'Failed'
-  } else {
-    return 'Run Simulation'
-  }
+  if ('running' === store.simulationState) return 'Running'
+  else if ('failed' === store.simulationState) return 'Failed'
+  else return 'Run Simulation'
 }
 </script>
 
@@ -108,11 +127,4 @@ const buttonText = () => {
   background: transparent;
   border: none !important;
 }
-/* .leaflet-layer,
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out,
-.leaflet-control-attribution {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-} */
-
 </style>
